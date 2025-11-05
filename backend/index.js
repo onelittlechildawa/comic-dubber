@@ -1,9 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-require('dotenv').config();
+const { GoogleGenAI } = require('@google/genai');
+const { config: loadEnv } = require('dotenv');
 const serverless = require('serverless-http');
+
+// 导入必需的库
+const wav = require('wav');
+const { PassThrough } = require('stream'); // Node.js 内置模块
+
+loadEnv();
 
 // --- Basic Setup ---
 const app = express();
@@ -13,14 +19,73 @@ app.use(cors());
 if (!process.env.GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY is not set in the environment variables.');
 }
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-const ttsModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-tts' });
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // --- Multer Setup for Image Uploads ---
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+// --- 工具函数：在内存中创建 WAV 文件 Buffer ---
+/**
+ * 在内存中创建完整的 WAV 文件 Buffer
+ * @param {Buffer} pcmData - 原始 PCM 音频数据
+ * @returns {Promise<Buffer>} - 完整的 WAV 文件 Buffer
+ */
+async function createWaveBuffer(
+    pcmData,
+    channels = 1,
+    rate = 24000,
+    sampleWidth = 2, // 16-bit = 2 bytes
+) {
+    return new Promise((resolve, reject) => {
+        // 1. 创建一个 PassThrough 流来捕获 wav.FileWriter 的输出
+        const outputStream = new PassThrough();
+        const chunks = [];
+
+        outputStream.on('data', (chunk) => chunks.push(chunk));
+        outputStream.on('finish', () => {
+            // 2. 流结束时，合并所有块，得到完整的 WAV 文件 Buffer
+            resolve(Buffer.concat(chunks));
+        });
+        outputStream.on('error', reject);
+
+        // 3. 创建 wav.FileWriter，将其输出管道连接到内存流
+        const writer = new wav.Writer({
+            channels,
+            sampleRate: rate,
+            bitDepth: sampleWidth * 8,
+        });
+
+        writer.pipe(outputStream);
+
+        // 4. 写入原始 PCM 数据
+        writer.write(pcmData);
+        writer.end();
+    });
+}
+
+async function saveWaveFile(
+   filename,
+   pcmData,
+   channels = 1,
+   rate = 24000,
+   sampleWidth = 2,
+) {
+   return new Promise((resolve, reject) => {
+      const writer = new wav.FileWriter(filename, {
+            channels,
+            sampleRate: rate,
+            bitDepth: sampleWidth * 8,
+      });
+
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+
+      writer.write(pcmData);
+      writer.end();
+   });
+}
+
 
 // --- API Endpoint ---
 app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
@@ -31,17 +96,23 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
   console.log('Image received. Extracting text with Gemini 2.5 Flash...');
 
   try {
-    // 1. Get text from the comic image
-    const imagePart = {
-      inlineData: {
-        data: req.file.buffer.toString('base64'),
-        mimeType: req.file.mimetype,
-      },
-    };
+    // 1. Get text from the comic image (Vision part remains the same)
     const visionPrompt = "Read the following comic image and extract the text from the speech bubbles in the correct reading order. Only return the text content, with each bubble's text on a new line. Do not add any extra commentary or formatting.";
     
-    const visionResult = await visionModel.generateContent([visionPrompt, imagePart]);
-    const extractedText = visionResult.response.text();
+    const visionContents = [
+      {
+        inlineData: {
+          data: req.file.buffer.toString('base64'),
+          mimeType: req.file.mimetype,
+        },
+      },
+      { text: visionPrompt },
+    ];
+    const visionResponse = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: visionContents,
+    });
+    const extractedText = visionResponse.text;
 
     if (!extractedText || extractedText.trim() === '') {
       console.log('Gemini did not return any text.');
@@ -51,30 +122,46 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
     console.log('Extracted Text:', extractedText);
     console.log('Synthesizing audio with Gemini 2.5 TTS...');
 
-    // 2. Convert the extracted text to speech
-    const ttsResponse = await ttsModel.generateContent({
-        contents: [{ parts: [{ text: extractedText }] }],
-        generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: {
-                voiceConfig: {
-                    prebuiltVoiceConfig: { voiceName: 'Kore' }, // You can change the voice here
-                },
-            },
+    // 2. Convert the extracted text to speech (TTS part remains the same)
+    const ttsContents = [{ parts: [{ text: extractedText }] }];
+    const ttsResponse = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash-preview-tts',
+      contents: ttsContents,
+      config: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
         },
+      },
     });
-
-    const audioData = ttsResponse.response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    
-    if (!audioData) {
+    const audioData = ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+    if (!audioData || !audioData.data) {
         console.error('TTS response did not contain audio data.');
         return res.status(500).send('Failed to generate audio.');
     }
+    
+    // 3. 【关键修改】将原始 PCM 数据转换为完整的 WAV Data URI
+    
+    // Base64 解码原始 PCM 数据
+    const rawPcmData = Buffer.from(audioData.data, 'base64');
+    
+    // 在内存中生成带有 WAV 头的完整文件 Buffer
+    const waveFileBuffer = await createWaveBuffer(rawPcmData);
+    await saveWaveFile('output.wav', rawPcmData);
+    // 将完整的 WAV Buffer 转换为 Base64 字符串
+    const base64Audio = waveFileBuffer.toString('base64');
 
-    console.log('Audio synthesized. Sending to client.');
+    // 构建 Data URI 字符串
+    const dataUri = `data:audio/wav;base64,${base64Audio}`;
+
+    console.log('Audio synthesized and converted to WAV Data URI. Sending to client.');
+    
+    // 4. 将 Data URI 发送回客户端
     res.json({
-      audio: audioData,
-      mimeType: 'audio/wav',
+      // 客户端可以直接使用这个字符串作为 <audio> 标签的 src
+      audioDataUri: dataUri, 
     });
 
   } catch (error) {
@@ -85,3 +172,10 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
 
 // --- Serverless Handler ---
 module.exports.handler = serverless(app);
+
+// -----------------------------------------------------------------------
+// 注意：如果您本地测试，请取消注释以下代码：
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, () => {
+//     console.log(`Server is running on port ${PORT}`);
+// });

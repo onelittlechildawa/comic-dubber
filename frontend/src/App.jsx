@@ -45,13 +45,10 @@ function App() {
       }
 
       const data = await response.json();
-      if (!data.audio) {
+      if (!data.audioDataUri) {
         throw new Error('Server did not return audio data.');
       }
-      const mimeType = data.mimeType ?? 'audio/wav';
-      const audioBytes = Uint8Array.from(atob(data.audio), (char) => char.charCodeAt(0));
-      const audioBlob = new Blob([audioBytes], { type: mimeType });
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const audioUrl = `${data.audioDataUri}`;
       setAudioSrc(audioUrl);
 
     } catch (error) {
