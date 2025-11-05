@@ -82,8 +82,8 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>AI 配音你的漫画！</h1>
-      <p>请让我们来给你的漫画配音！</p>
+      <h1>听见你的漫画</h1>
+      <p>给你的漫画配音！</p>
 
       <div className="controls-container">
         <input 
@@ -94,11 +94,11 @@ function App() {
           style={{ display: 'none' }} 
         />
         <button onClick={() => fileInputRef.current.click()}>
-          {selectedFile ? "更换漫画" : "Select Image"}
+          {selectedFile ? "上传图片" : "Select Image"}
         </button>
         
         <button onClick={loadDemoImage}>
-          Use Demo Image
+          使用 Demo 图片
         </button>
         
         <button onClick={handleDubClick} disabled={!selectedFile || isLoading}>
