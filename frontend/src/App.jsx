@@ -81,15 +81,17 @@ function App() {
         </button>
       </div>
 
-      {previewUrl && (
-        <img src={previewUrl} alt="Selected comic preview" className="image-preview" />
-      )}
-
       {audioSrc && (
         <audio controls src={audioSrc}>
           Your browser does not support the audio element.
         </audio>
       )}
+      
+      {previewUrl && (
+        <img src={previewUrl} alt="Selected comic preview" className="image-preview" />
+      )}
+
+      
     </div>
   );
 }
