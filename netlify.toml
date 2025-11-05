@@ -15,3 +15,6 @@
   # The name of the function file is index.js, so the function is named 'index'
   to = "/.netlify/functions/index/:splat"
   status = 200
+
+[[plugins]]
+package = "@netlify/plugin-functions-install-core"
