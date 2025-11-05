@@ -13,7 +13,7 @@
   # All requests to /api/* will be proxied to the serverless function
   from = "/api/*"
   # The name of the function file is index.js, so the function is named 'index'
-  to = "/.netlify/functions/index/:splat"
+  to = "/.netlify/functions/dub/:splat"
   status = 200
 
 [[plugins]]
