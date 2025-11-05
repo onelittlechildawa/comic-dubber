@@ -115,7 +115,7 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
     // 1. Get text from the comic image (Vision part remains the same)
     const visionPrompt = `
 Read the following comic image and extract the text from the speech bubbles in the correct reading order.
-Use the original language except for the following:
+Use the original language in the comic, whether it is English, Japanese, or Chinese, except for the format。
 IMPORTANT FORMAT REQUIREMENTS:
 - Every sentence MUST start with either "Male:" or "Female:" prefix to indicate the speaker
 - Identify the gender of each speaker based on visual cues in the comic
@@ -129,6 +129,9 @@ Example output format:
 Male: Hi there! How are you doing?
 Female: (cheerfully) I'm doing great, thanks for asking![laugh]
 Male: [sigh] That's good to hear...
+
+Male: 你好！
+Female: (cheerfully) 我很好，谢谢你的关心！[laugh]
 
 Remember: EVERY line must start with "Male:" or "Female:" The text should be in the original language.`;
 
