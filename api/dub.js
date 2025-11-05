@@ -3,6 +3,10 @@ const cors = require('cors');
 const multer = require('multer');
 const { GoogleGenAI } = require('@google/genai');
 const { config: loadEnv } = require('dotenv');
+const wav = require('wav');
+const { PassThrough } = require('stream');
+
+loadEnv();
 
 // --- Basic Setup ---
 const app = express();
