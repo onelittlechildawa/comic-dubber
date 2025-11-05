@@ -15,11 +15,25 @@ loadEnv();
 const app = express();
 app.use(cors());
 
-// --- Google AI Setup ---
+// --- Google AI Setup with Multiple API Keys ---
 if (!process.env.GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY is not set in the environment variables.');
 }
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// 解析多个 API 密钥（支持逗号分隔）
+const apiKeys = process.env.GEMINI_API_KEY.split(',').map(key => key.trim()).filter(key => key.length > 0);
+
+if (apiKeys.length === 0) {
+  throw new Error('No valid GEMINI_API_KEY found.');
+}
+
+console.log(`Loaded ${apiKeys.length} API key(s)`);
+
+// 随机选择一个 API 密钥
+function getRandomApiKey() {
+  const randomIndex = Math.floor(Math.random() * apiKeys.length);
+  return apiKeys[randomIndex];
+}
 
 // --- Multer Setup for Image Uploads ---
 const storage = multer.memoryStorage();
@@ -93,12 +107,21 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
     return res.status(400).send('No image file uploaded.');
   }
 
+  // 为本次请求随机选择一个 API 密钥
+  const selectedApiKey = getRandomApiKey();
+  const genAI = new GoogleGenAI({ apiKey: selectedApiKey });
+  console.log(`Using API key: ${selectedApiKey.substring(0, 8)}...`);
+
   console.log('Image received. Extracting text with Gemini 2.5 Flash...');
 
   try {
     // 1. Get text from the comic image (Vision part remains the same)
-    const visionPrompt = "Read the following comic image and extract the text from the speech bubbles in the correct reading order. That's for tts, so follow the format like: \'Say cheerfully: Hi! ; Say sadly: Goodbye!\', only the content is needed.";
-    
+    const visionPrompt = ' \
+    Read the following comic image and extract the text from the speech bubbles in the correct reading order. \
+    That\'s for tts, so follow the format like: \'Say cheerfully: Hi! ; Say sadly: Goodbye!\', only the content is needed. \
+    You can add these tags: [sigh] [laugh] [uhm]. \
+    You can add explanation of the scene, but keep it strictly brief and in brackets.';
+
     const visionContents = [
       {
         inlineData: {
@@ -125,13 +148,13 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
     // 2. Convert the extracted text to speech (TTS part remains the same)
     const ttsContents = [{ parts: [{ text: extractedText }] }];
     const ttsResponse = await genAI.models.generateContent({
-      model: 'gemini-2.5-flash-preview-tts',
+      model: 'gemini-2.5-pro-preview-tts',
       contents: ttsContents,
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
+            prebuiltVoiceConfig: { voiceName: 'Leda' },
           },
         },
       },
@@ -149,7 +172,7 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
     
     // 在内存中生成带有 WAV 头的完整文件 Buffer
     const waveFileBuffer = await createWaveBuffer(rawPcmData);
-    await saveWaveFile('output.wav', rawPcmData);
+    // await saveWaveFile('output.wav', rawPcmData);
     // 将完整的 WAV Buffer 转换为 Base64 字符串
     const base64Audio = waveFileBuffer.toString('base64');
 
