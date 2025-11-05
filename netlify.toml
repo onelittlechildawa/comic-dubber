@@ -6,7 +6,7 @@
   # The directory where the built frontend is located (relative to the root)
   publish = "frontend/dist"
   # The directory where the serverless function is located (relative to the root)
-  functions = "backend"
+  functions = "api"
 
 # Redirect rule for the API
 [[redirects]]
