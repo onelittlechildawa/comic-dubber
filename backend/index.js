@@ -3,10 +3,10 @@ const cors = require('cors');
 const multer = require('multer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
+const serverless = require('serverless-http');
 
 // --- Basic Setup ---
 const app = express();
-const port = 3001;
 app.use(cors());
 
 // --- Google AI Setup ---
@@ -83,7 +83,5 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
   }
 });
 
-const serverless = require('serverless-http');
-
-// --- Start Server ---
+// --- Serverless Handler ---
 module.exports.handler = serverless(app);
