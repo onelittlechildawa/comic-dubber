@@ -148,7 +148,7 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
     // 2. Convert the extracted text to speech (TTS part remains the same)
     const ttsContents = [{ parts: [{ text: extractedText }] }];
     const ttsResponse = await genAI.models.generateContent({
-      model: 'gemini-2.5-pro-preview-tts',
+      model: 'gemini-2.5-flash-preview-tts',
       contents: ttsContents,
       config: {
         responseModalities: ['AUDIO'],
