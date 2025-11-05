@@ -1,11 +1,11 @@
 # Netlify configuration file
 
 [build]
-  # This command will be run in the 'frontend' directory
-  command = "npm run build"
-  # The directory where the built frontend is located
+  # Change into the frontend directory, install dependencies, and then build
+  command = "cd frontend && npm install && npm run build"
+  # The directory where the built frontend is located (relative to the root)
   publish = "frontend/dist"
-  # The directory where the serverless function is located
+  # The directory where the serverless function is located (relative to the root)
   functions = "backend"
 
 # Redirect rule for the API
