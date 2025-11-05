@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 function App() {
@@ -8,6 +8,27 @@ function App() {
   const [audioSrc, setAudioSrc] = useState(null);
 
   const fileInputRef = useRef(null);
+
+  // 默认 demo 图片路径（放在 public 目录下）
+  const DEMO_IMAGE_PATH = '/demo.webp';
+
+  // 组件加载时设置默认图片
+  useEffect(() => {
+    loadDemoImage();
+  }, []);
+
+  // 加载默认示例图片
+  const loadDemoImage = async () => {
+    try {
+      const response = await fetch(DEMO_IMAGE_PATH);
+      const blob = await response.blob();
+      const file = new File([blob], 'demo.webp', { type: blob.type });
+      setSelectedFile(file);
+      setPreviewUrl(DEMO_IMAGE_PATH);
+    } catch (error) {
+      console.error('Failed to load demo image:', error);
+    }
+  };
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -76,8 +97,12 @@ function App() {
           {selectedFile ? "Change Image" : "Select Image"}
         </button>
         
+        <button onClick={loadDemoImage}>
+          Use Demo Image
+        </button>
+        
         <button onClick={handleDubClick} disabled={!selectedFile || isLoading}>
-          {isLoading ? 'Dubbing...' : 'Dub it!'}
+          {isLoading ? 'Dubbing...Please wait about 30s...' : 'Dub it!'}
         </button>
       </div>
 
