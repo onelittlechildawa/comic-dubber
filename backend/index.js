@@ -125,12 +125,12 @@ IMPORTANT FORMAT REQUIREMENTS:
 - Maintain the natural reading order of the comic panels
 
 Optional enhancements:
-- You can add emotion tags where appropriate: [sigh] [laugh] [uhm] [gasp] [whisper]
-- You can add brief emotion/tone directions in brackets, e.g., (cheerfully), (sadly), (angrily)
+- You should add emotion tags where appropriate: [sigh] [laugh] [uhm] [gasp] [whisper]
+- You should add brief emotion/tone directions in brackets, e.g., (cheerfully), (sadly), (angrily)
 
 Example output format:
 Male: Hi there! How are you doing?
-Female: (cheerfully) I'm doing great, thanks for asking!
+Female: (cheerfully) I'm doing great, thanks for asking![laugh]
 Male: [sigh] That's good to hear...
 
 Remember: EVERY line must start with "Male:" or "Female:"`;
