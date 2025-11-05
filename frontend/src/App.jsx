@@ -82,8 +82,8 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Comic Dubber AI</h1>
-      <p>Upload a comic strip image and let AI dub it for you.</p>
+      <h1>AI 配音你的漫画！</h1>
+      <p>请让我们来给你的漫画配音！</p>
 
       <div className="controls-container">
         <input 
