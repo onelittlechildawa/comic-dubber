@@ -71,11 +71,11 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
         return res.status(500).send('Failed to generate audio.');
     }
 
-    const audioBuffer = Buffer.from(audioData, 'base64');
-
     console.log('Audio synthesized. Sending to client.');
-    res.set('Content-Type', 'audio/wav');
-    res.send(audioBuffer);
+    res.json({
+      audio: audioData,
+      mimeType: 'audio/wav',
+    });
 
   } catch (error) {
     console.error('Error processing request:', error);
