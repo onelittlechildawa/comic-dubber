@@ -116,11 +116,24 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
 
   try {
     // 1. Get text from the comic image (Vision part remains the same)
-    const visionPrompt = ' \
-    Read the following comic image and extract the text from the speech bubbles in the correct reading order. \
-    That\'s for tts, so follow the format like: \'Say cheerfully: Hi! ; Say sadly: Goodbye!\', only the content is needed. \
-    You can add these tags: [sigh] [laugh] [uhm]. \
-    You can add explanation of the scene, but keep it strictly brief and in brackets.';
+    const visionPrompt = `
+Read the following comic image and extract the text from the speech bubbles in the correct reading order.
+
+IMPORTANT FORMAT REQUIREMENTS:
+- Every sentence MUST start with either "Male:" or "Female:" prefix to indicate the speaker
+- Identify the gender of each speaker based on visual cues in the comic
+- Maintain the natural reading order of the comic panels
+
+Optional enhancements:
+- You can add emotion tags where appropriate: [sigh] [laugh] [uhm] [gasp] [whisper]
+- You can add brief emotion/tone directions in brackets, e.g., (cheerfully), (sadly), (angrily)
+
+Example output format:
+Male: Hi there! How are you doing?
+Female: (cheerfully) I'm doing great, thanks for asking!
+Male: [sigh] That's good to hear...
+
+Remember: EVERY line must start with "Male:" or "Female:"`;
 
     const visionContents = [
       {
@@ -153,9 +166,22 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Leda' },
-          },
+          multiSpeakerVoiceConfig: {
+              speakerVoiceConfigs: [
+                    {
+                        speaker: 'Male',
+                        voiceConfig: {
+                          prebuiltVoiceConfig: { voiceName: 'Fenrir' }
+                        }
+                    },
+                    {
+                        speaker: 'Female',
+                        voiceConfig: {
+                          prebuiltVoiceConfig: { voiceName: 'Leda' }
+                        }
+                    }
+              ]
+            }
         },
       },
     });
