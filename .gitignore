@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+# Local Netlify folder
+.netlify
+>>>>>>> 19ec758 (first commit)
 # Logs
 logs
 *.log
