@@ -97,7 +97,7 @@ app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
 
   try {
     // 1. Get text from the comic image (Vision part remains the same)
-    const visionPrompt = "Read the following comic image and extract the text from the speech bubbles in the correct reading order. Only return the text content, with each bubble's text on a new line. Do not add any extra commentary or formatting.";
+    const visionPrompt = "Read the following comic image and extract the text from the speech bubbles in the correct reading order. That's for tts, so follow the format like: \'Say cheerfully: Hi! ; Say sadly: Goodbye!\', only the content is needed.";
     
     const visionContents = [
       {
