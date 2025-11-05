@@ -3,13 +3,6 @@ const cors = require('cors');
 const multer = require('multer');
 const { GoogleGenAI } = require('@google/genai');
 const { config: loadEnv } = require('dotenv');
-const serverless = require('serverless-http');
-
-// 导入必需的库
-const wav = require('wav');
-const { PassThrough } = require('stream'); // Node.js 内置模块
-
-loadEnv();
 
 // --- Basic Setup ---
 const app = express();
@@ -219,8 +212,12 @@ Remember: EVERY line must start with "Male:" or "Female:"`;
   }
 });
 
-// --- Serverless Handler ---
-module.exports.handler = serverless(app);
+// --- Vercel Serverless Function Handler ---
+// Vercel 需要默认导出一个函数
+module.exports = async (req, res) => {
+  // 让 Express 应用处理请求
+  return app(req, res);
+};
 
 // -----------------------------------------------------------------------
 // 注意：如果您本地测试，请取消注释以下代码：
