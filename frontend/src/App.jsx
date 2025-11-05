@@ -94,7 +94,7 @@ function App() {
           style={{ display: 'none' }} 
         />
         <button onClick={() => fileInputRef.current.click()}>
-          {selectedFile ? "Change Image" : "Select Image"}
+          {selectedFile ? "更换漫画" : "Select Image"}
         </button>
         
         <button onClick={loadDemoImage}>
@@ -102,7 +102,7 @@ function App() {
         </button>
         
         <button onClick={handleDubClick} disabled={!selectedFile || isLoading}>
-          {isLoading ? 'Dubbing...Please wait about 30s...' : 'Dub it!'}
+          {isLoading ? '配音中...请等待大约 30-60 秒...' : '开始配音！'}
         </button>
       </div>
 
