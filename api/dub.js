@@ -218,7 +218,7 @@ Remember: EVERY line must start with "Male:" or "Female:" The text should be in 
 
   } catch (error) {
     console.error('Error processing request:', error);
-    res.status(500).send('An error occurred while processing the comic.');
+    res.status(500).send('TTS生成遇到了问题,可能是密钥达到限额。');
   }
 });
 
