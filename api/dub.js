@@ -158,9 +158,12 @@ Remember: EVERY line must start with "Male:" or "Female:" The text should be in 
     console.log('Extracted Text:', extractedText);
     console.log('Synthesizing audio with Gemini 2.5 TTS...');
 
-    // 2. Convert the extracted text to speech (TTS part remains the same)
+    const selectedTtsApiKey = getRandomApiKey();
+    const ttsGenAI = new GoogleGenAI({ apiKey: selectedTtsApiKey });
+    console.log(`Using API key for TTS: ${selectedTtsApiKey.substring(0, 8)}...`);
+
     const ttsContents = [{ parts: [{ text: extractedText }] }];
-    const ttsResponse = await genAI.models.generateContent({
+    const ttsResponse = await ttsGenAI.models.generateContent({
       model: 'gemini-2.5-flash-preview-tts',
       contents: ttsContents,
       config: {
