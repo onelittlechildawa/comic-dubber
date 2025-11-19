@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenAI,setDefaultBaseUrls } = require('@google/genai');
 const { config: loadEnv } = require('dotenv');
 const wav = require('wav');
 const { PassThrough } = require('stream');
@@ -11,6 +11,10 @@ loadEnv();
 // --- Basic Setup ---
 const app = express();
 app.use(cors());
+
+if (process.env.GENAI_API_BASE_URL) {
+  setDefaultBaseUrls({geminiUrl: process.env.GENAI_API_BASE_URL});
+}
 
 // --- Google AI Setup with Multiple API Keys ---
 if (!process.env.GEMINI_API_KEY) {
