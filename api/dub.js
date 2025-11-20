@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const { GoogleGenAI,setDefaultBaseUrls } = require('@google/genai');
+const { GoogleGenAI, setDefaultBaseUrls } = require('@google/genai');
 const { config: loadEnv } = require('dotenv');
 const wav = require('wav');
 const { PassThrough } = require('stream');
@@ -11,9 +11,10 @@ loadEnv();
 // --- Basic Setup ---
 const app = express();
 app.use(cors());
+app.use(express.json()); // Enable JSON body parsing
 
 if (process.env.GENAI_API_BASE_URL) {
-  setDefaultBaseUrls({geminiUrl: process.env.GENAI_API_BASE_URL});
+  setDefaultBaseUrls({ geminiUrl: process.env.GENAI_API_BASE_URL });
 }
 
 // --- Google AI Setup with Multiple API Keys ---
@@ -21,7 +22,6 @@ if (!process.env.GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY is not set in the environment variables.');
 }
 
-// 解析多个 API 密钥（支持逗号分隔）
 const apiKeys = process.env.GEMINI_API_KEY.split(',').map(key => key.trim()).filter(key => key.length > 0);
 
 if (apiKeys.length === 0) {
@@ -30,7 +30,6 @@ if (apiKeys.length === 0) {
 
 console.log(`Loaded ${apiKeys.length} API key(s)`);
 
-// 随机选择一个 API 密钥
 function getRandomApiKey() {
   const randomIndex = Math.floor(Math.random() * apiKeys.length);
   return apiKeys[randomIndex];
@@ -40,104 +39,56 @@ function getRandomApiKey() {
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// --- 工具函数：在内存中创建 WAV 文件 Buffer ---
-/**
- * 在内存中创建完整的 WAV 文件 Buffer
- * @param {Buffer} pcmData - 原始 PCM 音频数据
- * @returns {Promise<Buffer>} - 完整的 WAV 文件 Buffer
- */
-async function createWaveBuffer(
-    pcmData,
-    channels = 1,
-    rate = 24000,
-    sampleWidth = 2, // 16-bit = 2 bytes
-) {
-    return new Promise((resolve, reject) => {
-        // 1. 创建一个 PassThrough 流来捕获 wav.FileWriter 的输出
-        const outputStream = new PassThrough();
-        const chunks = [];
+// --- Helper Functions ---
 
-        outputStream.on('data', (chunk) => chunks.push(chunk));
-        outputStream.on('finish', () => {
-            // 2. 流结束时，合并所有块，得到完整的 WAV 文件 Buffer
-            resolve(Buffer.concat(chunks));
-        });
-        outputStream.on('error', reject);
+async function createWaveBuffer(pcmData, channels = 1, rate = 24000, sampleWidth = 2) {
+  return new Promise((resolve, reject) => {
+    const outputStream = new PassThrough();
+    const chunks = [];
 
-        // 3. 创建 wav.FileWriter，将其输出管道连接到内存流
-        const writer = new wav.Writer({
-            channels,
-            sampleRate: rate,
-            bitDepth: sampleWidth * 8,
-        });
+    outputStream.on('data', (chunk) => chunks.push(chunk));
+    outputStream.on('finish', () => resolve(Buffer.concat(chunks)));
+    outputStream.on('error', reject);
 
-        writer.pipe(outputStream);
-
-        // 4. 写入原始 PCM 数据
-        writer.write(pcmData);
-        writer.end();
+    const writer = new wav.Writer({
+      channels,
+      sampleRate: rate,
+      bitDepth: sampleWidth * 8,
     });
+
+    writer.pipe(outputStream);
+    writer.write(pcmData);
+    writer.end();
+  });
 }
 
-async function saveWaveFile(
-   filename,
-   pcmData,
-   channels = 1,
-   rate = 24000,
-   sampleWidth = 2,
-) {
-   return new Promise((resolve, reject) => {
-      const writer = new wav.FileWriter(filename, {
-            channels,
-            sampleRate: rate,
-            bitDepth: sampleWidth * 8,
-      });
+// --- API Endpoints ---
 
-      writer.on('finish', resolve);
-      writer.on('error', reject);
-
-      writer.write(pcmData);
-      writer.end();
-   });
-}
-
-
-// --- API Endpoint ---
-app.post('/api/dub', upload.single('comicImage'), async (req, res) => {
+// 1. Extract Text
+app.post('/api/extract-text', upload.single('comicImage'), async (req, res) => {
   if (!req.file) {
     return res.status(400).send('No image file uploaded.');
   }
 
-  // 为本次请求随机选择一个 API 密钥
   const selectedApiKey = getRandomApiKey();
   const genAI = new GoogleGenAI({ apiKey: selectedApiKey });
-  console.log(`Using API key: ${selectedApiKey.substring(0, 8)}...`);
-
-  console.log('Image received. Extracting text with Gemini 2.5 Flash...');
+  console.log(`[Extract] Using API key: ${selectedApiKey.substring(0, 8)}...`);
 
   try {
-    // 1. Get text from the comic image (Vision part remains the same)
     const visionPrompt = `
 Read the following comic image and extract the text from the speech bubbles in the correct reading order.
-Use the original language in the comic, except for the format.
+Use the original language in the comic.
 IMPORTANT FORMAT REQUIREMENTS:
-- Every sentence MUST start with either "Male:" or "Female:" prefix to indicate the speaker
-- Identify the gender of each speaker based on visual cues in the comic
-- Maintain the natural reading order of the comic panels
+- Every sentence MUST start with either "Male:" or "Female:" prefix to indicate the speaker.
+- Identify the gender of each speaker based on visual cues.
+- Maintain the natural reading order.
+- Add emotion tags where appropriate: [sigh] [laugh] etc.
+- Add brief emotion/tone directions in brackets: (cheerfully) etc.
 
-Optional enhancements:
-- You should add emotion tags where appropriate: [sigh] [laugh] [uhm] [gasp] [whisper]
-- You should add brief emotion/tone directions in brackets, e.g., (cheerfully), (sadly), (angrily)
-
-Example output format:
-Male: Hi there! How are you doing?
-Female: (cheerfully) I'm doing great, thanks for asking![laugh]
-Male: [sigh] That's good to hear...
-
-Male: 你好！
-Female: (cheerfully) 我很好，谢谢你的关心！[laugh]
-
-Remember: EVERY line must start with "Male:" or "Female:" The text should be in the original language.`;
+Example output:
+Male: Hi there!
+Female: (cheerfully) I'm doing great! [laugh]
+`;
 
     const visionContents = [
       {
@@ -148,94 +99,125 @@ Remember: EVERY line must start with "Male:" or "Female:" The text should be in 
       },
       { text: visionPrompt },
     ];
+
     const visionResponse = await genAI.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: visionContents,
     });
+
     const extractedText = visionResponse.text;
+    if (!extractedText) throw new Error('No text extracted');
 
-    if (!extractedText || extractedText.trim() === '') {
-      console.log('Gemini did not return any text.');
-      return res.status(500).send('Could not extract any text from the image.');
-    }
+    res.json({ text: extractedText });
 
-    console.log('Extracted Text:', extractedText);
-    console.log('Synthesizing audio with Gemini 2.5 TTS...');
+  } catch (error) {
+    console.error('[Extract] Error:', error);
+    res.status(500).send('Failed to extract text.');
+  }
+});
 
-    const selectedTtsApiKey = getRandomApiKey();
-    const ttsGenAI = new GoogleGenAI({ apiKey: selectedTtsApiKey });
-    console.log(`Using API key for TTS: ${selectedTtsApiKey.substring(0, 8)}...`);
+// 2. Chat / Modify Text
+app.post('/api/chat', async (req, res) => {
+  const { messages, currentText } = req.body;
+  // messages: [{ role: 'user'|'model', content: '...' }]
+  // currentText: string (the current state of the comic text)
 
-    const ttsContents = [{ parts: [{ text: extractedText }] }];
-    const ttsResponse = await ttsGenAI.models.generateContent({
+  const selectedApiKey = getRandomApiKey();
+  const genAI = new GoogleGenAI({ apiKey: selectedApiKey });
+  console.log(`[Chat] Using API key: ${selectedApiKey.substring(0, 8)}...`);
+
+  try {
+    const systemPrompt = `
+You are a helpful assistant helping a user edit comic scripts.
+A Chinese user wants to modify the following comic text:
+"""
+${currentText}
+"""
+
+Your goal is to:
+1. Understand the user's request.
+2. Modify the comic text accordingly.
+3. Return the response ONLY in JSON format with two fields,no \`\`\`json:
+   - "reply": A short conversational reply to the user.
+   - "updatedText": The full modified comic text (keeping the Male/Female format).
+
+If the user just says "hello" or asks a question unrelated to the text, just reply and keep "updatedText" same as original.
+`;
+
+    const chatContents = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      ...messages.map(m => ({ role: m.role, parts: [{ text: m.content }] }))
+    ];
+
+    const response = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: chatContents,
+      config: { responseMimeType: 'application/json' }
+    });
+
+    const extractedText = response.text;
+    if (!extractedText) throw new Error('No text extracted');
+
+    res.json({ text: extractedText });
+    console.info(extractedText);
+
+  } catch (error) {
+    console.error('[Chat] Error:', error);
+    res.status(500).send('Failed to process chat.');
+  }
+});
+
+// 3. Generate Audio
+app.post('/api/generate-audio', async (req, res) => {
+  const { text } = req.body;
+
+  if (!text) return res.status(400).send('No text provided.');
+
+  const selectedApiKey = getRandomApiKey();
+  const genAI = new GoogleGenAI({ apiKey: selectedApiKey });
+  console.log(`[TTS] Using API key: ${selectedApiKey.substring(0, 8)}...`);
+
+  try {
+    const ttsContents = [{ parts: [{ text: text }] }];
+    const ttsResponse = await genAI.models.generateContent({
       model: 'gemini-2.5-flash-preview-tts',
       contents: ttsContents,
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
           multiSpeakerVoiceConfig: {
-              speakerVoiceConfigs: [
-                    {
-                        speaker: 'Male',
-                        voiceConfig: {
-                          prebuiltVoiceConfig: { voiceName: 'Fenrir' }
-                        }
-                    },
-                    {
-                        speaker: 'Female',
-                        voiceConfig: {
-                          prebuiltVoiceConfig: { voiceName: 'Leda' }
-                        }
-                    }
-              ]
-            }
+            speakerVoiceConfigs: [
+              { speaker: 'Male', voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Fenrir' } } },
+              { speaker: 'Female', voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Leda' } } }
+            ]
+          }
         },
       },
     });
-    const audioData = ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-    if (!audioData || !audioData.data) {
-        console.error('TTS response did not contain audio data.');
-        return res.status(500).send('Failed to generate audio.');
-    }
-    
-    // 3. 【关键修改】将原始 PCM 数据转换为完整的 WAV Data URI
-    
-    // Base64 解码原始 PCM 数据
-    const rawPcmData = Buffer.from(audioData.data, 'base64');
-    
-    // 在内存中生成带有 WAV 头的完整文件 Buffer
-    const waveFileBuffer = await createWaveBuffer(rawPcmData);
-    // await saveWaveFile('output.wav', rawPcmData);
-    // 将完整的 WAV Buffer 转换为 Base64 字符串
-    const base64Audio = waveFileBuffer.toString('base64');
 
-    // 构建 Data URI 字符串
+    const audioData = ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+    if (!audioData || !audioData.data) throw new Error('No audio data');
+
+    const rawPcmData = Buffer.from(audioData.data, 'base64');
+    const waveFileBuffer = await createWaveBuffer(rawPcmData);
+    const base64Audio = waveFileBuffer.toString('base64');
     const dataUri = `data:audio/wav;base64,${base64Audio}`;
 
-    console.log('Audio synthesized and converted to WAV Data URI. Sending to client.');
-    
-    // 4. 将 Data URI 发送回客户端
-    res.json({
-      // 客户端可以直接使用这个字符串作为 <audio> 标签的 src
-      audioDataUri: dataUri, 
-    });
+    res.json({ audioDataUri: dataUri });
 
   } catch (error) {
-    console.error('Error processing request:', error);
-    res.status(500).send('TTS生成遇到了问题,可能是密钥达到限额。');
+    console.error('[TTS] Error:', error);
+    res.status(500).send('Failed to generate audio.');
   }
 });
 
-// --- Vercel Serverless Function Handler ---
-// Vercel 需要默认导出一个函数
+// --- Vercel Handler ---
 module.exports = async (req, res) => {
-  // 让 Express 应用处理请求
   return app(req, res);
 };
 
-// -----------------------------------------------------------------------
-// 注意：如果您本地测试，请取消注释以下代码：
-// const PORT = process.env.PORT || 3000;
-// app.listen(PORT, () => {
-//     console.log(`Server is running on port ${PORT}`);
-// });
+// --- Local Dev Server ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
