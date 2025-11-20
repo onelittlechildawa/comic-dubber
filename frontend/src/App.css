@@ -39,6 +39,33 @@
   color: #646cff;
 }
 
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.github-link {
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  transition: color 0.25s, transform 0.25s;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.github-link:hover {
+  color: #646cff;
+  transform: scale(1.1);
+}
+
+.github-link svg {
+  width: 24px;
+  height: 24px;
+}
+
+
 .image-preview-container {
   flex-grow: 1;
   background-color: #111;
@@ -94,7 +121,9 @@
   align-items: flex-end;
 }
 
-.message.model, .message.system, .message.audio {
+.message.model,
+.message.system,
+.message.audio {
   align-self: flex-start;
   align-items: flex-start;
 }
@@ -103,7 +132,7 @@
   background-color: #333;
   padding: 1rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .message.user .message-content {
@@ -177,9 +206,11 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
+
 button:hover {
   border-color: #646cff;
 }
+
 button:disabled {
   background-color: #333;
   color: #666;
@@ -191,6 +222,7 @@ button:disabled {
   background-color: #646cff;
   color: white;
 }
+
 .btn.primary:hover {
   background-color: #535bf2;
 }
