@@ -82,8 +82,8 @@ IMPORTANT FORMAT REQUIREMENTS:
 - Every sentence MUST start with either "Male:" or "Female:" prefix to indicate the speaker.
 - Identify the gender of each speaker based on visual cues.
 - Maintain the natural reading order.
-- Add emotion tags where appropriate: [sigh] [laugh] etc.
-- Add brief emotion/tone directions in brackets: (cheerfully) etc.
+- Add more emotion tags where appropriate: [sigh] [laugh] etc.
+- Add more brief emotion/tone directions in brackets: (cheerfully) etc.
 
 Example output:
 Male: Hi there!
