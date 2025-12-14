@@ -37,46 +37,18 @@ app.post('/api/draw-comic', async (req, res) => {
     console.log(`[Draw] Using prompt: "${prompt}"`);
 
     try {
-        const response = await client.models.generateImage({
+        const response = await client.models.generateContent({
             model: 'gemini-2.5-flash-image',
-            prompt: `A 4-panel comic strip about: ${prompt}. Cartoon style, flat colors, clear outlines.`,
-            config: {
-                number_of_images: 1,
-                aspect_ratio: '16:9',
-            }
+            contents: `A 4-panel comic strip about: ${prompt}. Cartoon style, flat colors, clear outlines.`,
         });
 
-        // The SDK returns a response object with specific data structure
-        // Usually response.image.imageBytes (base64) or similar
-        // Let's assume standard response format for this SDK
+        const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
-        let base64Image = null;
-
-        if (response && response.image && response.image.imageBytes) {
-            base64Image = response.image.imageBytes;
-        } else if (response && response.candidates && response.candidates[0]) {
-            // Fallback or different structure check
-            // Some versions return raw base64 in different content parts
-            // But generateImage usually returns wrapper
-            console.log("Response structure:", JSON.stringify(Object.keys(response)));
+        if (!part || !part.inlineData || !part.inlineData.data) {
+            throw new Error('No image generated (no inlineData found)');
         }
 
-        // If direct image bytes property exists (likely for generateImage)
-        if (response.image) {
-            base64Image = response.image.imageBytes;
-        }
-
-        if (!base64Image) {
-            // Logic for checking candidates if typical structure fails
-            // But let's rely on the client.models.generateImage returning an object with image data
-            // If the SDK returns a GenerateImageResponse, it likely has 'image' or 'images'
-            if (response.images && response.images.length > 0) {
-                base64Image = response.images[0].imageBytes;
-            }
-        }
-
-        if (!base64Image) throw new Error('No image generated');
-
+        const base64Image = part.inlineData.data;
         const dataUri = `data:image/png;base64,${base64Image}`;
         res.json({ imageUri: dataUri });
 
