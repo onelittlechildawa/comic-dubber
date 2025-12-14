@@ -8,6 +8,8 @@ function App() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentComicText, setCurrentComicText] = useState('');
+  const [showDrawInput, setShowDrawInput] = useState(false);
+  const [drawPrompt, setDrawPrompt] = useState('');
 
   const fileInputRef = useRef(null);
   const chatEndRef = useRef(null);
@@ -42,14 +44,48 @@ function App() {
     if (file) handleFileSelection(file);
   };
 
+
   const handleFileSelection = (file) => {
     if (file && file.type.startsWith('image/')) {
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setMessages([]); // Reset chat
       setCurrentComicText('');
-      // Auto-start extraction REMOVED
-      // extractText(file); 
+      setShowDrawInput(false);
+    }
+  };
+
+  const handleDrawComic = async () => {
+    if (!drawPrompt.trim()) return;
+
+    setIsLoading(true);
+    addMessage('system', '正在绘制漫画...');
+
+    try {
+      const response = await fetch('/api/draw-comic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: drawPrompt })
+      });
+
+      if (!response.ok) throw new Error('Drawing failed');
+
+      const data = await response.json();
+
+      // Convert bas64 data URI to a File object
+      const res = await fetch(data.imageUri);
+      const blob = await res.blob();
+      const file = new File([blob], "generated-comic.png", { type: "image/png" });
+
+      handleFileSelection(file);
+      addMessage('system', '漫画绘制完成！你可以点击“Start Analysis”来配音。');
+
+    } catch (error) {
+      console.error(error);
+      addMessage('system', '绘图失败，请重试。');
+    } finally {
+      setIsLoading(false);
+      setDrawPrompt('');
     }
   };
 
@@ -192,9 +228,28 @@ function App() {
             ref={fileInputRef}
             style={{ display: 'none' }}
           />
+
           <button onClick={() => fileInputRef.current.click()} className="btn">
             上传新漫画
           </button>
+
+          <button onClick={() => setShowDrawInput(!showDrawInput)} className="btn secondary">
+            AI 绘制漫画
+          </button>
+
+          {showDrawInput && (
+            <div className="draw-input-area">
+              <textarea
+                value={drawPrompt}
+                onChange={(e) => setDrawPrompt(e.target.value)}
+                placeholder="描述你想画的漫画场景..."
+                disabled={isLoading}
+              />
+              <button onClick={handleDrawComic} disabled={isLoading || !drawPrompt} className="btn small">
+                生成
+              </button>
+            </div>
+          )}
 
           <button
             onClick={() => {

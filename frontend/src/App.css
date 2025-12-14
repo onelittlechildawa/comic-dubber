@@ -212,10 +212,41 @@ button:hover {
 }
 
 button:disabled {
-  background-color: #333;
-  color: #666;
+  background-color: #ccc;
   cursor: not-allowed;
-  border-color: transparent;
+}
+
+.btn.secondary {
+  background-color: #6c757d;
+  margin-top: 10px;
+}
+
+.draw-input-area {
+  margin-top: 10px;
+  background: #2a2a2a;
+  /* Adjusted to match theme */
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid #333;
+  /* Added border for consistency */
+}
+
+.draw-input-area textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid #444;
+  /* Adjusted to match theme */
+  border-radius: 4px;
+  font-size: 14px;
+  resize: vertical;
+  background-color: #1a1a1a;
+  /* Adjusted to match theme */
+  color: white;
+  /* Adjusted to match theme */
 }
 
 .btn.primary {
