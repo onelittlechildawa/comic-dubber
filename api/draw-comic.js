@@ -42,9 +42,9 @@ app.post('/api/draw-comic', async (req, res) => {
             contents: `A 4-panel comic strip about: ${prompt}. Cartoon style, flat colors, clear outlines.`,
         });
 
-        const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+        const part = response.candidates?.[0]?.content?.parts;
 
-        if (!part || !part.inlineData || !part.inlineData.data) {
+        if (!part) {
             throw new Error('No image generated (no inlineData found)');
         }
 
