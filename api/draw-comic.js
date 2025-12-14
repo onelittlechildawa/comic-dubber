@@ -47,10 +47,16 @@ app.post('/api/draw-comic', async (req, res) => {
         if (!part) {
             throw new Error('No image generated (no inlineData found)');
         }
-
-        const base64Image = part.inlineData.data;
-        const dataUri = `data:image/png;base64,${base64Image}`;
-        res.json({ imageUri: dataUri });
+        if (part.text) {
+            const base64Image = part.text;
+            const dataUri = `data:image/png;base64,${base64Image}`;
+            res.json({ imageUri: dataUri });
+        }
+        else {
+            const base64Image = part.inlineData.data;
+            const dataUri = `data:image/png;base64,${base64Image}`;
+            res.json({ imageUri: dataUri });
+        }
 
     } catch (error) {
         console.error('[Draw] Error:', error);
