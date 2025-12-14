@@ -51,7 +51,7 @@ app.post('/api/draw-comic', async (req, res) => {
     try {
         const response = await client.models.generateContent({
             model: 'gemini-2.5-flash-image',
-            contents: `A 4-panel comic strip about: ${prompt}. Cartoon style, flat colors, clear outlines, with proper dialogue.`,
+            contents: `A 4-panel comic strip about: ${prompt}. Cartoon style, flat colors, clear outlines, with proper ENGLISH dialogue.`,
         });
 
         const part = response.candidates?.[0]?.content?.parts;
