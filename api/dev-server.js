@@ -54,13 +54,13 @@ app.post('/api/draw-comic', async (req, res) => {
             contents: `A 4-panel comic strip about: ${prompt}. Cartoon style, flat colors, clear outlines.`,
         });
 
-        const part = response.candidates?.[0]?.content?.parts?.[0];
+        const part = response.candidates?.[0]?.content?.parts;
 
-        console.log(part);
+        // console.log(part);
         if (!part) {
             throw new Error('No image generated (no inlineData found)');
         }
-        const base64Image = part.inlineData.data;
+        const base64Image = part?.[1]?.inlineData?.data;
         const dataUri = `data:image/png;base64,${base64Image}`;
         res.json({ imageUri: dataUri });
 
