@@ -325,7 +325,7 @@ function App() {
 
                 {msg.audioUrl && (
                   <div className="audio-player">
-                    <audio controls src={msg.audioUrl} autoPlay />
+                    <audio controls src={msg.audioUrl} />
                   </div>
                 )}
               </div>

@@ -382,10 +382,15 @@ button {
 }
 
 .message.model,
-.message.system,
+.message.system {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
 .message.audio {
   align-self: flex-start;
   align-items: flex-start;
+  max-width: 90%;
 }
 
 .message-content {
@@ -458,6 +463,8 @@ button {
 /* Audio Player */
 .audio-player {
   margin-top: 0.5rem;
+  width: 500px;
+  max-width: 100%;
 }
 
 .audio-player audio {
