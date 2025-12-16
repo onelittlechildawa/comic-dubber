@@ -67,8 +67,6 @@ app.post('/api/generate-audio', async (req, res) => {
 
     if (!text) return res.status(400).send('No text provided.');
 
-    text = 'TTS the following conversation between Male and Female:' + text;
-
     const selectedApiKey = getRandomApiKey();
     const genAI = new GoogleGenAI({ apiKey: selectedApiKey });
     console.log(`[TTS] Using API key: ${selectedApiKey.substring(0, 8)}...`);
@@ -76,7 +74,7 @@ app.post('/api/generate-audio', async (req, res) => {
     console.log(`[TTS] Using text: ${text}`);
 
     try {
-        const ttsContents = [{ parts: [{ text: text }] }];
+        const ttsContents = [{ parts: [{ text: 'TTS the following conversation between Male and Female, be emotional: '+text }] }];
         const ttsResponse = await genAI.models.generateContent({
             model: 'gemini-2.5-flash-preview-tts',
             contents: ttsContents,
