@@ -67,6 +67,8 @@ app.post('/api/generate-audio', async (req, res) => {
 
     if (!text) return res.status(400).send('No text provided.');
 
+    text = 'TTS the following conversation between Male and Female:' + text;
+
     const selectedApiKey = getRandomApiKey();
     const genAI = new GoogleGenAI({ apiKey: selectedApiKey });
     console.log(`[TTS] Using API key: ${selectedApiKey.substring(0, 8)}...`);
