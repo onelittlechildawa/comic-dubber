@@ -74,7 +74,7 @@ app.post('/api/generate-audio', async (req, res) => {
     console.log(`[TTS] Using text: ${text}`);
 
     try {
-        const ttsContents = [{ parts: [{ text: 'TTS the following conversation between Male and Female, be emotional: '+text }] }];
+        const ttsContents = [{ parts: [{ text: 'TTS the following conversation between Male and Female, be emotional:' + text }] }];
         const ttsResponse = await genAI.models.generateContent({
             model: 'gemini-2.5-flash-preview-tts',
             contents: ttsContents,
@@ -98,7 +98,7 @@ app.post('/api/generate-audio', async (req, res) => {
         const rawPcmData = Buffer.from(audioData.data, 'base64');
         const waveFileBuffer = await createWaveBuffer(rawPcmData);
         const base64Audio = waveFileBuffer.toString('base64');
-        const dataUri = `data: audio / wav; base64, ${base64Audio} `;
+        const dataUri = `data:audio/wav;base64,${base64Audio}`;
 
         res.json({ audioDataUri: dataUri });
 
