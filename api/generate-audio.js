@@ -71,12 +71,15 @@ app.post('/api/generate-audio', async (req, res) => {
     const genAI = new GoogleGenAI({ apiKey: selectedApiKey });
     console.log(`[TTS] Using API key: ${selectedApiKey.substring(0, 8)}...`);
 
+    console.log(`[TTS] Using text: ${text}`);
+
     try {
         const ttsContents = [{ parts: [{ text: text }] }];
         const ttsResponse = await genAI.models.generateContent({
             model: 'gemini-2.5-flash-preview-tts',
             contents: ttsContents,
             config: {
+                // systemInstruction: { parts: [{ text: "Please read the following text verbatim. Do not generate text output." }] },
                 responseModalities: ['AUDIO'],
                 speechConfig: {
                     multiSpeakerVoiceConfig: {
@@ -95,7 +98,7 @@ app.post('/api/generate-audio', async (req, res) => {
         const rawPcmData = Buffer.from(audioData.data, 'base64');
         const waveFileBuffer = await createWaveBuffer(rawPcmData);
         const base64Audio = waveFileBuffer.toString('base64');
-        const dataUri = `data:audio/wav;base64,${base64Audio}`;
+        const dataUri = `data: audio / wav; base64, ${base64Audio} `;
 
         res.json({ audioDataUri: dataUri });
 
@@ -113,5 +116,5 @@ module.exports = async (req, res) => {
 // --- Local Dev Server ---
 // const PORT = process.env.PORT || 3000;
 // app.listen(PORT, () => {
-//   console.log(`Server is running on port ${PORT}`);
+//   console.log(`Server is running on port ${ PORT } `);
 // });
