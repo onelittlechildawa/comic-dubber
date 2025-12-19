@@ -63,7 +63,7 @@ async function createWaveBuffer(pcmData, channels = 1, rate = 24000, sampleWidth
 }
 // 3. Generate Audio
 app.post('/api/generate-audio', async (req, res) => {
-    const { text } = req.body;
+    const { text, voices } = req.body;
 
     if (!text) return res.status(400).send('No text provided.');
 
@@ -83,7 +83,7 @@ app.post('/api/generate-audio', async (req, res) => {
                 responseModalities: ['AUDIO'],
                 speechConfig: {
                     multiSpeakerVoiceConfig: {
-                        speakerVoiceConfigs: [
+                        speakerVoiceConfigs: voices || [
                             { speaker: 'Male', voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Fenrir' } } },
                             { speaker: 'Female', voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Leda' } } }
                         ]

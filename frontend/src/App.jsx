@@ -4,16 +4,32 @@ import './App.css';
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentComicText, setCurrentComicText] = useState('');
-  const [showDrawInput, setShowDrawInput] = useState(false);
-  const [drawPrompt, setDrawPrompt] = useState('');
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('theme');
     if (saved) return saved;
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('messages');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [currentComicText, setCurrentComicText] = useState(() => {
+    return localStorage.getItem('currentComicText') || '';
+  });
+
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDrawInput, setShowDrawInput] = useState(false);
+  const [drawPrompt, setDrawPrompt] = useState('');
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [characterVoices, setCharacterVoices] = useState(() => {
+    const saved = localStorage.getItem('characterVoices');
+    return saved ? JSON.parse(saved) : {
+      'Male': 'Fenrir',
+      'Female': 'Leda'
+    };
   });
 
   const fileInputRef = useRef(null);
@@ -26,6 +42,19 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Persist messages and comic text
+  useEffect(() => {
+    localStorage.setItem('messages', JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem('currentComicText', currentComicText);
+  }, [currentComicText]);
+
+  useEffect(() => {
+    localStorage.setItem('characterVoices', JSON.stringify(characterVoices));
+  }, [characterVoices]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -188,10 +217,15 @@ function App() {
     addMessage('system', '生成中...');
 
     try {
+      const voicesConfig = Object.entries(characterVoices).map(([name, voice]) => ({
+        speaker: name,
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } }
+      }));
+
       const response = await fetch('/api/generate-audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToDub }),
+        body: JSON.stringify({ text: textToDub, voices: voicesConfig }),
       });
 
       if (!response.ok) throw new Error('Audio generation failed');
@@ -270,6 +304,30 @@ function App() {
             AI 绘制漫画
           </button>
 
+          <button onClick={() => setShowVoiceSettings(!showVoiceSettings)} className="btn secondary">
+            配置角色音色
+          </button>
+
+          {showVoiceSettings && (
+            <div className="voice-settings-panel">
+              <h3>音色配置</h3>
+              {Object.entries(characterVoices).map(([char, voice]) => (
+                <div key={char} className="voice-setting-item">
+                  <label>{char === 'Male' ? '🙋‍♂️ 男声' : char === 'Female' ? '🙋‍♀️ 女声' : char}:</label>
+                  <select
+                    value={voice}
+                    onChange={(e) => setCharacterVoices({ ...characterVoices, [char]: e.target.value })}
+                  >
+                    <option value="Fenrir">Fenrir (深沉男声)</option>
+                    <option value="Leda">Leda (温柔女声)</option>
+                    <option value="Aoede">Aoede (清亮女声)</option>
+                    <option value="Puck">Puck (活泼男声)</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
           {showDrawInput && (
             <div className="draw-input-area">
               <textarea
@@ -324,8 +382,24 @@ function App() {
                 )}
 
                 {msg.audioUrl && (
-                  <div className="audio-player">
+                  <div className="audio-player-v2">
+                    <div className="audio-info">
+                      <span className="audio-icon">🎵</span>
+                      <span className="audio-label">生成的配音</span>
+                    </div>
                     <audio controls src={msg.audioUrl} />
+                    <a
+                      href={msg.audioUrl}
+                      download="comic-dub.wav"
+                      className="download-link"
+                      title="下载音频"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                    </a>
                   </div>
                 )}
               </div>
