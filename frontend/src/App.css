@@ -390,7 +390,14 @@ button {
 .message.audio {
   align-self: flex-start;
   align-items: flex-start;
-  max-width: 90%;
+  max-width: 100%;
+  width: 100%;
+}
+
+.message.audio .message-content {
+  width: 100%;
+  max-width: 800px;
+  /* Optional cap for very wide screens */
 }
 
 .message-content {
@@ -464,14 +471,15 @@ button {
 .audio-player-v2 {
   margin-top: 1rem;
   background: rgba(0, 0, 0, 0.3);
-  padding: 1rem;
+  padding: 1.25rem;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
   border: 1px solid var(--border-subtle);
   width: 100%;
   position: relative;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 .audio-info {
@@ -488,7 +496,7 @@ button {
 
 .audio-player-v2 audio {
   width: 100%;
-  height: 36px;
+  height: 44px;
   border-radius: 8px;
   filter: invert(1) hue-rotate(180deg) brightness(1.5);
 }
