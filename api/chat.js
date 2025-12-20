@@ -96,7 +96,7 @@ If the user just says "hello" or asks a question unrelated to the text, just rep
         ];
 
         const response = await genAI.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: chatContents,
             config: { responseMimeType: 'application/json' }
         });
